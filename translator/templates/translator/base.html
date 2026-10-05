@@ -1,17 +1,32 @@
 {% load static %}
 <!doctype html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Language Translator{% endblock %}</title>
-  <!-- Bootstrap 5 from a CDN: ready-made responsive styling, no build step -->
+
+  <!-- Apply the saved theme BEFORE the page draws, so it never flashes white in dark mode.
+       Order: saved choice -> operating-system preference -> light. -->
+  <script>
+    (function () {
+      var theme = null;
+      try { theme = localStorage.getItem("theme"); } catch (e) { /* storage blocked */ }
+      if (theme !== "light" && theme !== "dark") {
+        theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+      document.documentElement.setAttribute("data-bs-theme", theme);
+    })();
+  </script>
+
+  <!-- Bootstrap 5.3: responsive styling + built-in light/dark colour modes -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="{% static 'translator/css/style.css' %}" rel="stylesheet">
 </head>
 <body class="d-flex flex-column min-vh-100">
 
-  <nav class="navbar navbar-expand-md navbar-dark bg-primary">
+  <!-- data-bs-theme="dark" on the navbar keeps its text white on the blue background in both modes -->
+  <nav class="navbar navbar-expand-md bg-primary" data-bs-theme="dark">
     <div class="container">
       <a class="navbar-brand fw-semibold" href="{% url 'translator:home' %}">🌐 Language Translator</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
@@ -19,7 +34,7 @@
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="mainNav">
-        <ul class="navbar-nav ms-auto">
+        <ul class="navbar-nav ms-auto align-items-md-center">
           {# request.resolver_match.url_name tells us which page is open, to highlight it #}
           <li class="nav-item">
             <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}"
@@ -27,6 +42,10 @@
           </li>
           <li class="nav-item"><span class="nav-link disabled" title="Coming in Sprint 2">History</span></li>
           <li class="nav-item"><span class="nav-link disabled" title="Coming in Sprint 3">Statistics</span></li>
+          <li class="nav-item ms-md-2">
+            <button id="theme-toggle" class="btn btn-sm btn-outline-light" type="button"
+                    aria-label="Switch colour theme" title="Switch light / dark theme">🌙</button>
+          </li>
         </ul>
       </div>
     </div>
@@ -44,12 +63,13 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="border-top py-3 text-center text-muted small">
+  <footer class="border-top py-3 text-center text-body-secondary small">
     Python Language Translator · ITL-V PBL · BVCOE Pune ·
     <a href="https://github.com/saksham7730/python-language-translator" class="link-secondary">GitHub</a>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{% static 'translator/js/theme.js' %}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
