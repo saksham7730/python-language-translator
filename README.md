@@ -5,8 +5,7 @@ A Django web app (with a companion command-line tool) that translates text betwe
 > **Course:** Information Technology Laboratory-V (ITL-V), B.Tech IT, Semester V
 > **Institute:** Bharati Vidyapeeth College of Engineering, Pune
 > **Type:** Project Based Learning (PBL), individual project
-> **Faculty guide:** _[Prof. name]_
-> **Submission deadline:** _[date]_
+> **Faculty guide:** Prof.Sonali D Mali
 
 ![Status](https://img.shields.io/badge/status-in%20development-yellow)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
