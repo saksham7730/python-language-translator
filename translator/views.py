@@ -1,14 +1,26 @@
 """Views (the V in MVT): receive a request, return a response."""
 from django.shortcuts import render
 
-# (title, description) tuples shown as cards on the home page
-FEATURES = [
-    ("Translate", "Translate text between 100+ languages using deep-translator."),
-    ("Auto-detect", "Leave the source language on Auto and it will be detected for you."),
-    ("History & stats", "Every translation is saved, searchable and summarised in charts."),
+# A short preview list of (code, name) tuples for the dropdowns.
+# US-01 replaces this with the full list from services/languages.py.
+PREVIEW_LANGUAGES = [
+    ("en", "English"),
+    ("hi", "Hindi"),
+    ("mr", "Marathi"),
+    ("fr", "French"),
+    ("de", "German"),
+    ("es", "Spanish"),
+    ("ja", "Japanese"),
 ]
 
 
 def home(request):
-    """Landing page. Replaced by the translate form in US-01."""
-    return render(request, "translator/home.html", {"features": FEATURES})
+    """Home page: hero banner, translator card and stat tiles."""
+    # (label, value) tuples. Real numbers arrive in US-03 when translations are saved.
+    stats = [
+        ("Total translations", "—"),
+        ("Languages used", "—"),
+        ("Today", "—"),
+    ]
+    context = {"languages": PREVIEW_LANGUAGES, "stats": stats}
+    return render(request, "translator/home.html", context)

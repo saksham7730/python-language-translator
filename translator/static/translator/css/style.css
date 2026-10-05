@@ -1,9 +1,26 @@
-/* Small custom styles on top of Bootstrap. */
+/* Custom styles on top of Bootstrap.
+   Colours use Bootstrap's CSS variables (--bs-*) so they adapt to light AND dark mode. */
 
-/* Translation text areas: comfortable size, user can drag to resize vertically */
+/* Hero banner: soft blue gradient that works on both themes */
+.hero {
+  background: linear-gradient(135deg,
+    rgba(var(--bs-primary-rgb), 0.14),
+    rgba(var(--bs-info-rgb), 0.08));
+  border: 1px solid rgba(var(--bs-primary-rgb), 0.2);
+}
+
+/* Translation text areas: comfortable size, resizable vertically only */
 textarea.translate-box {
-  min-height: 180px;
+  min-height: 200px;
   resize: vertical;
+}
+
+/* Stat tiles */
+.stat-tile .stat-value {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--bs-primary-text-emphasis);
+  line-height: 1.2;
 }
 
 /* Keep long words / URLs inside cards instead of overflowing */
