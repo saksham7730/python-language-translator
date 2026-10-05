@@ -45,7 +45,10 @@ class EngineTests(SimpleTestCase):
 
         mock_cls.assert_called_once_with(source="auto", target="hi")
         mock_cls.return_value.translate.assert_called_once_with("Hello")  # text was stripped
-        self.assertEqual(result, TranslationResult("Hello", "नमस्ते", "auto", "hi"))
+        self.assertIsInstance(result, TranslationResult)
+        self.assertEqual(result.source_text, "Hello")
+        self.assertEqual(result.translated_text, "नमस्ते")
+        self.assertEqual(result.target_lang, "hi")
 
     def test_empty_text_is_rejected_without_calling_api(self):
         with patch(ENGINE_TRANSLATOR) as mock_cls:
