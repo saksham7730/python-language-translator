@@ -1,0 +1,26 @@
+{% extends "translator/base.html" %}
+
+{% block title %}Home · Language Translator{% endblock %}
+
+{% block content %}
+<div class="p-4 p-md-5 mb-4 bg-body-tertiary rounded-3">
+  <h1 class="display-6 fw-semibold">Python Language Translator</h1>
+  <p class="lead mb-0">
+    Translate text between 100+ languages with automatic language detection,
+    a searchable history and usage statistics.
+  </p>
+</div>
+
+<div class="row g-3">
+  {% for title, text in features %}
+    <div class="col-md-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h2 class="h5 card-title">{{ title }}</h2>
+          <p class="card-text text-muted">{{ text }}</p>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

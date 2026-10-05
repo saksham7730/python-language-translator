@@ -1,0 +1,12 @@
+/* Small custom styles on top of Bootstrap. */
+
+/* Translation text areas: comfortable size, user can drag to resize vertically */
+textarea.translate-box {
+  min-height: 180px;
+  resize: vertical;
+}
+
+/* Keep long words / URLs inside cards instead of overflowing */
+.card-text {
+  overflow-wrap: anywhere;
+}
