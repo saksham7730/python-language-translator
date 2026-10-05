@@ -10,6 +10,7 @@ from deep_translator import GoogleTranslator
 
 from translator.exceptions import TranslationError
 
+from .detection import Detection, detect_language
 from .languages import AUTO
 
 logger = logging.getLogger(__name__)
@@ -25,9 +26,15 @@ class TranslationResult:
     """
     source_text: str
     translated_text: str
-    source_lang: str      # a language code, or "auto"
+    source_lang: str      # the language actually used: a code, or "auto" if detection wasn't confident
     target_lang: str
     engine: str = "google"
+    detection: Detection | None = None   # set when the user chose Auto-detect
+
+    @property
+    def was_auto_detected(self):
+        """True if the user picked Auto-detect (stored in the history in US-03)."""
+        return self.detection is not None or self.source_lang == AUTO
 
 
 def translate_text(text, target_lang, source_lang=AUTO):
@@ -35,6 +42,14 @@ def translate_text(text, target_lang, source_lang=AUTO):
     text = (text or "").strip()
     if not text:
         raise TranslationError("Please enter some text to translate.")
+
+    # Auto-detect: if we are confident about the language, translate FROM that language.
+    # If not (very short or ambiguous text), keep "auto" and let Google decide.
+    detection = None
+    if source_lang == AUTO:
+        detection = detect_language(text)
+        if detection and detection.reliable:
+            source_lang = detection.code
 
     try:
         translated = GoogleTranslator(source=source_lang, target=target_lang).translate(text)
@@ -54,4 +69,5 @@ def translate_text(text, target_lang, source_lang=AUTO):
         translated_text=translated,
         source_lang=source_lang,
         target_lang=target_lang,
+        detection=detection,
     )

@@ -46,6 +46,19 @@
             <span class="text-danger">{% for error in form.text.errors %}{{ error }}{% endfor %}</span>
             <span class="text-body-secondary"><span id="char-count">0</span> / 5000</span>
           </div>
+          {# US-02: show what Auto-detect found #}
+          {% if result.was_auto_detected %}
+            <div id="detected-lang" class="small mt-1">
+              {% if result.detection.reliable %}
+                <span class="badge text-bg-info">Detected: {{ result.detection.name }}</span>
+                <span class="text-body-secondary">({{ result.detection.percent }}% confident)</span>
+              {% else %}
+                <span class="text-body-secondary">
+                  The text is too short to detect reliably, so the translator picked the language automatically.
+                </span>
+              {% endif %}
+            </div>
+          {% endif %}
         </div>
         <div class="col-md-6">
           <textarea id="output-text" class="form-control translate-box bg-body-tertiary" rows="8" readonly
