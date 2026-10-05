@@ -1,0 +1,52 @@
+name: User Story
+description: A feature described from the user's point of view
+title: "US-XX: <short title>"
+labels: ["user-story", "feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Write the story from the user's point of view. Keep each story small enough to finish in one sprint.
+  - type: textarea
+    id: story
+    attributes:
+      label: User story
+      description: "As a <type of user>, I want <goal>, so that <benefit>."
+      placeholder: "As a user, I want to ..., so that ..."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Testable conditions that must all be true for the story to be "Done".
+      value: |
+        - [ ] 
+        - [ ] 
+        - [ ] 
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority (MoSCoW)
+      options:
+        - Must have
+        - Should have
+        - Could have
+        - Won't have (this time)
+    validations:
+      required: true
+  - type: dropdown
+    id: points
+    attributes:
+      label: Story points
+      description: Relative effort (Fibonacci scale)
+      options: ["1", "2", "3", "5", "8"]
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Technical notes
+      description: Files likely to change, libraries, edge cases (optional)

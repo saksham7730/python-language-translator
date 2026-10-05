@@ -1,0 +1,17 @@
+# Web framework (5.2 is the current LTS release, supported until April 2028)
+Django>=5.2,<5.3
+
+# Translation + language detection
+deep-translator>=1.11.4,<2
+langdetect>=1.0.9
+
+# Database driver for MySQL (pure Python, no C compiler needed on Windows)
+PyMySQL>=1.1
+
+# Data analysis + visualisation (pip picks the newest version your Python supports)
+numpy>=1.26
+pandas>=2.2
+matplotlib>=3.8
+
+# Reads settings (secret key, DB credentials) from a .env file
+python-dotenv>=1.0
