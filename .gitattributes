@@ -1,0 +1,7 @@
+# Store every text file with LF line endings in the repo and in your working copy.
+# This stops the "LF will be replaced by CRLF" warnings on Windows and keeps
+# diffs clean. Git detects binary files automatically; images are listed to be safe.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
