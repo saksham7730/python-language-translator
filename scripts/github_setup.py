@@ -287,64 +287,91 @@ def create_issues():
 # Step 2: add issues to the Project (v2) board
 # ---------------------------------------------------------------------------
 
-def ensure_field(project, fields, name, *extra):
-    """Create a custom project field if it doesn't exist yet. Returns the field dict."""
+# GitHub's board templates ship a "Priority" field with P0/P1/P2 options.
+# We map MoSCoW onto it: Must -> P0, Should -> P1, Could -> P2.
+MOSCOW_TO_P = {"Must have": "P0", "Should have": "P1", "Could have": "P2"}
+
+
+def load_fields(project, owner):
+    """Return {field name: field dict} for every field on the board."""
+    raw = gh("project", "field-list", str(project), "--owner", owner,
+             "--limit", "100", "--format", "json")
+    return {f["name"]: f for f in json.loads(raw)["fields"]} if raw else {}
+
+
+def ensure_field(project, owner, fields, name, *extra):
+    """Create a custom field only if the board doesn't already have one with that name."""
     if name not in fields:
-        gh("project", "field-create", str(project), "--owner", "@me", "--name", name, *extra)
+        gh("project", "field-create", str(project), "--owner", owner, "--name", name, *extra)
         print(f"  ok  created field '{name}'")
-        fields.update(load_fields(project))
+        fields.update(load_fields(project, owner))
     return fields.get(name, {})
 
 
-def load_fields(project):
-    raw = gh("project", "field-list", str(project), "--owner", "@me", "--format", "json")
-    return {f["name"]: f for f in json.loads(raw)["fields"]} if raw else {}
+def option_id(field, *names):
+    """Find the id of the first single-select option whose name matches one of `names`."""
+    options = {o["name"]: o["id"] for o in field.get("options", [])}
+    return next((options[n] for n in names if n in options), None)
 
 
 def setup_project(project):
     print(f"\n== Project board #{project} ==")
+
+    # 'gh project link' needs the real username, not the "@me" shortcut
+    owner = gh("api", "user", "--jq", ".login") or "@me"
     repo = gh("repo", "view", "--json", "name", "--jq", ".name")
-    # Linking makes the board appear on the repo's "Projects" tab (warns if already linked)
-    gh("project", "link", str(project), "--owner", "@me", "--repo", repo, fatal=False)
-    print(f"  ok  linked repo '{repo}'")
+    if gh("project", "link", str(project), "--owner", owner, "--repo", repo, fatal=False) is not None:
+        print(f"  ok  link step done for {owner}/{repo}")
 
-    project_id = gh("project", "view", str(project), "--owner", "@me", "--format", "json", "--jq", ".id")
-    fields = load_fields(project)
+    project_id = gh("project", "view", str(project), "--owner", owner, "--format", "json", "--jq", ".id")
+    fields = load_fields(project, owner)
 
-    points_field = ensure_field(project, fields, "Story Points", "--data-type", "NUMBER")
-    priority_field = ensure_field(project, fields, "Priority", "--data-type", "SINGLE_SELECT",
-                                  "--single-select-options", "Must have,Should have,Could have")
     status_field = fields.get("Status", {})
+    # Use the template's "Estimate" number field if it exists (the column totals use it)
+    points_field = fields.get("Estimate") or ensure_field(project, owner, fields, "Story Points",
+                                                          "--data-type", "NUMBER")
+    priority_field = fields.get("Priority") or ensure_field(
+        project, owner, fields, "Priority", "--data-type", "SINGLE_SELECT",
+        "--single-select-options", "Must have,Should have,Could have")
+    print(f"  using fields: Status, {points_field.get('name')}, {priority_field.get('name')}")
 
-    # Look up option ids for single-select fields by their visible name
-    status_opts = {o["name"]: o["id"] for o in status_field.get("options", [])}
-    priority_opts = {o["name"]: o["id"] for o in priority_field.get("options", [])}
-    if not DRY_RUN and "Backlog" not in status_opts:
-        sys.exit("ERROR: the board's Status field has no 'Backlog' option.\n"
-                 "Rename/add the Status options in the board settings first (see the setup guide).")
+    backlog_id = option_id(status_field, "Backlog")
+    if not DRY_RUN and not backlog_id:
+        sys.exit("ERROR: the board's Status field has no 'Backlog' option. Add it in the board settings first.")
 
     issues = json.loads(gh("issue", "list", "--state", "all", "--limit", "200",
                            "--json", "title,url") or "[]")
     by_title = {i["title"]: i["url"] for i in issues}
     stories = {s["title"]: s for s in STORIES}
 
+    # Cards that already have a Status keep it, so re-running never undoes your board moves
+    board_items = json.loads(gh("project", "item-list", str(project), "--owner", owner,
+                                "--limit", "200", "--format", "json") or '{"items": []}')["items"]
+    current_status = {i.get("content", {}).get("url"): i.get("status") for i in board_items}
+
     for title in [*stories, *(c["title"] for c in CHORES)]:
         url = by_title.get(title)
         if not url and not DRY_RUN:
             print(f"  skip {title} (issue not found, run step 1 first)")
             continue
-        item_id = gh("project", "item-add", str(project), "--owner", "@me",
+        item_id = gh("project", "item-add", str(project), "--owner", owner,
                      "--url", url or "<url>", "--format", "json", "--jq", ".id")
 
-        def edit(field, *value):
+        def edit(field, flag, value):
+            """Set one field on this card. Warn (don't crash) if something doesn't match."""
+            if value is None:
+                print(f"  WARNING: no matching option in '{field.get('name')}' for {title}")
+                return
             gh("project", "item-edit", "--id", item_id, "--project-id", project_id,
-               "--field-id", field.get("id", "<field>"), *value)
+               "--field-id", field.get("id", "<field>"), flag, value, fatal=False)
 
-        edit(status_field, "--single-select-option-id", status_opts.get("Backlog", "<opt>"))
+        if not current_status.get(url):
+            edit(status_field, "--single-select-option-id", backlog_id or "<opt>")
         if title in stories:
             s = stories[title]
             edit(points_field, "--number", str(s["points"]))
-            edit(priority_field, "--single-select-option-id", priority_opts.get(s["priority"], "<opt>"))
+            edit(priority_field, "--single-select-option-id",
+                 option_id(priority_field, s["priority"], MOSCOW_TO_P[s["priority"]]) if not DRY_RUN else "<opt>")
         print(f"  ok  {title}")
 
 
