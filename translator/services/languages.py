@@ -40,6 +40,18 @@ def is_supported(code):
     return code in supported_codes()
 
 
+def find_language_code(value):
+    """Accept a code ("hi") or a name ("hindi", "Hindi") and return the code, or None.
+
+    Used by the command-line tool so users can type either.
+    """
+    value = (value or "").strip()
+    if is_supported(value):
+        return value
+    by_name = {name.lower(): code for code, name in get_languages().items()}  # dict comprehension
+    return by_name.get(value.lower())
+
+
 def language_choices():
     """List of (code, name) tuples sorted by name, ready for a <select> dropdown."""
     return sorted(get_languages().items(), key=lambda item: item[1])

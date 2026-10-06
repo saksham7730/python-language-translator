@@ -132,7 +132,7 @@ class ErrorViewTests(EngineMocksMixin, TestCase):
     url = reverse("translator:home")
 
     def post(self, text=ENGLISH, source="auto", target="hi"):
-        return self.client.post(self.url, {"text": text, "source_lang": source, "target_lang": target})
+        return self.client.post(self.url, {"text": text, "source_lang": source, "target_lang": target}, follow=True)
 
     def test_fallback_is_shown_to_user(self):
         self.google.return_value.translate.side_effect = TooManyRequests()

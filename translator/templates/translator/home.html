@@ -75,7 +75,7 @@
                     {% if result %}lang="{{ result.target_lang }}"{% endif %}>{% if result %}{{ result.translated_text }}{% endif %}</textarea>
           {% if result %}
             <div class="small text-body-secondary mt-1">
-              Translated to {{ target_name }} · via {{ result.engine_name }}
+              Translated to {{ result.target_name }} · via {{ result.engine_name }}
             </div>
             {% if result.used_fallback %}
               <div id="fallback-note" class="small text-warning-emphasis mt-1">
@@ -97,7 +97,7 @@
 </section>
 
 {# ---------- Stat tiles ---------- #}
-{# Real numbers come from the database once US-03 adds the Translation model. #}
+{# Numbers from Translation.objects.summary() (US-03) #}
 <section class="row g-3">
   {% for label, value in stats %}
     <div class="col-sm-4">
