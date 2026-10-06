@@ -65,7 +65,8 @@
             <div class="col-md-6"><p class="mb-0 history-text">{{ t.source_text|truncatechars:200 }}</p></div>
             <div class="col-md-6"><p class="mb-0 history-text" lang="{{ t.target_lang }}">{{ t.translated_text|truncatechars:200 }}</p></div>
           </div>
-          <div class="d-flex gap-2 mt-2">
+          <div class="d-flex gap-3 mt-2">
+            <a class="btn btn-link btn-sm px-0" href="{% url 'translator:detail' t.pk %}">View</a>
             <a class="btn btn-link btn-sm px-0"
                href="{% url 'translator:home' %}?text={{ t.source_text|urlencode }}&amp;from={{ t.source_lang|urlencode }}&amp;to={{ t.target_lang|urlencode }}">Translate again</a>
             <a class="btn btn-link btn-sm text-danger px-0 ms-auto"

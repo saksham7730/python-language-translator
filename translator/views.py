@@ -1,5 +1,6 @@
 """Views (the V in MVT): receive a request, return a response."""
 from django.contrib import messages
+from django.http import HttpResponse
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -7,9 +8,10 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods
 
 from .exceptions import TranslationError
-from .forms import HistoryFilterForm, TranslateForm
+from .forms import FileTranslateForm, HistoryFilterForm, TranslateForm
 from .models import Translation
-from .services.engine import translate_text
+from .services.analytics import build_report
+from .services.engine import translate_long_text, translate_text
 from .services.languages import AUTO, get_language_name, is_supported
 
 DEFAULT_TARGET = "hi"
@@ -87,6 +89,45 @@ def home(request):
 
 
 # ---------------------------------------------------------------------------
+# File translation (US-10)
+# ---------------------------------------------------------------------------
+
+def translate_file(request):
+    """Upload a .txt file, translate it chunk by chunk, save it, then show the result page."""
+    if request.method == "POST":
+        form = FileTranslateForm(request.POST, request.FILES)   # uploaded files arrive in request.FILES
+        if form.is_valid():
+            data = form.cleaned_data
+            try:
+                result = translate_long_text(data["file"], data["target_lang"], data["source_lang"])
+            except TranslationError as exc:
+                messages.error(request, str(exc))
+            else:
+                translation = Translation.from_result(result, origin=Translation.Origin.FILE)
+                messages.success(request, f"Translated {len(result.source_text):,} characters.")
+                return redirect("translator:detail", pk=translation.pk)
+    else:
+        form = FileTranslateForm(initial={"source_lang": AUTO, "target_lang": DEFAULT_TARGET})
+    return render(request, "translator/file.html", {"form": form})
+
+
+def translation_detail(request, pk):
+    """Full text of one saved translation, with download / copy / listen buttons."""
+    translation = get_object_or_404(Translation, pk=pk)
+    return render(request, "translator/detail.html", {"t": translation})
+
+
+def download_translation(request, pk):
+    """Send the translated text as a .txt file download."""
+    translation = get_object_or_404(Translation, pk=pk)
+    response = HttpResponse(translation.translated_text + "\n", content_type="text/plain; charset=utf-8")
+    # "attachment" tells the browser to save the file instead of showing it
+    filename = f"translation-{translation.pk}-{translation.target_lang}.txt"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
+# ---------------------------------------------------------------------------
 # History (US-04 list, US-05 search/filter, US-06 delete)
 # ---------------------------------------------------------------------------
 
@@ -135,3 +176,17 @@ def clear_history(request):
         return redirect("translator:history")
     return render(request, "translator/confirm_delete.html",
                   {"translation": None, "count": count, "next": reverse("translator:history")})
+
+
+# ---------------------------------------------------------------------------
+# Statistics (US-08)
+# ---------------------------------------------------------------------------
+
+STATS_FIELDS = ["created_at", "source_lang", "target_lang", "char_count", "engine", "origin", "was_auto_detected"]
+
+
+def stats(request):
+    """Usage statistics: the ORM fetches plain rows, services/analytics.py does Pandas/NumPy/Matplotlib."""
+    records = list(Translation.objects.values(*STATS_FIELDS))   # list of dicts, one per translation
+    report = build_report(records)
+    return render(request, "translator/stats.html", {"report": report})

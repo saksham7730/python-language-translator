@@ -76,8 +76,15 @@
                     placeholder="Translation will appear here"
                     {% if result %}lang="{{ result.target_lang }}"{% endif %}>{% if result %}{{ result.translated_text }}{% endif %}</textarea>
           {% if result %}
-            <div class="small text-body-secondary mt-1">
-              Translated to {{ result.target_name }} · via {{ result.engine_name }}
+            <div class="d-flex flex-wrap align-items-center gap-2 small text-body-secondary mt-1">
+              <span>Translated to {{ result.target_name }} · via {{ result.engine_name }}</span>
+              <span class="ms-auto d-flex gap-1">
+                {# US-11: buttons wired up by speech.js #}
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-speak="#output-text"
+                        data-lang="{{ result.target_lang }}" title="Listen" aria-label="Listen to the translation">🔊</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-copy="#output-text"
+                        title="Copy" aria-label="Copy the translation">📋</button>
+              </span>
             </div>
             {% if result.used_fallback %}
               <div id="fallback-note" class="small text-warning-emphasis mt-1">
@@ -93,7 +100,10 @@
           <span class="btn-label">Translate</span>
         </button>
       </div>
-      <p class="text-center small text-body-secondary mt-2 mb-0">Tip: press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to translate</p>
+      <p class="text-center small text-body-secondary mt-2 mb-0">
+        Tip: press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to translate ·
+        <a href="{% url 'translator:file' %}">Translate a .txt file instead</a>
+      </p>
     </form>
   </div>
 </section>

@@ -33,3 +33,8 @@ textarea.translate-box {
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
+
+/* Statistics charts: Matplotlib draws a light and a dark version; show the one for the current theme */
+.chart-dark { display: none; }
+[data-bs-theme="dark"] .chart-light { display: none; }
+[data-bs-theme="dark"] .chart-dark { display: inline; }
