@@ -1,0 +1,49 @@
+{% extends "translator/base.html" %}
+
+{% block title %}Translate a file · Language Translator{% endblock %}
+
+{% block content %}
+<div class="card mx-auto shadow-sm" style="max-width: 720px;">
+  <div class="card-body p-4">
+    <h1 class="h4">Translate a text file</h1>
+    <p class="text-body-secondary small">
+      Upload a UTF-8 <code>.txt</code> file (up to 200 KB / 20,000 characters).
+      Long files are split into chunks, translated piece by piece and joined back together.
+    </p>
+
+    {# enctype="multipart/form-data" is required, otherwise the browser doesn't send the file #}
+    <form method="post" enctype="multipart/form-data" id="file-form" novalidate>
+      {% csrf_token %}
+      {% for error in form.non_field_errors %}<div class="alert alert-warning py-2 small">{{ error }}</div>{% endfor %}
+
+      <div class="mb-3">
+        <label for="{{ form.file.id_for_label }}" class="form-label">{{ form.file.label }}</label>
+        {{ form.file }}
+        {% for error in form.file.errors %}<div class="small text-danger mt-1">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col">
+          <label for="{{ form.source_lang.id_for_label }}" class="form-label small text-body-secondary mb-1">From</label>
+          {{ form.source_lang }}
+        </div>
+        <div class="col">
+          <label for="{{ form.target_lang.id_for_label }}" class="form-label small text-body-secondary mb-1">To</label>
+          {{ form.target_lang }}
+        </div>
+      </div>
+      <button id="file-btn" type="submit" class="btn btn-primary px-4">Translate file</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Show progress while a long file is being translated, and block double-submits
+  document.getElementById("file-form").addEventListener("submit", function () {
+    const button = document.getElementById("file-btn");
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Translating…';
+  });
+</script>
+{% endblock %}

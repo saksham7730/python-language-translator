@@ -2,26 +2,13 @@
 from django import forms
 from django.db.models import Q
 
-from .services.engine import MAX_CHARS
+from .services.engine import MAX_CHARS, MAX_DOCUMENT_CHARS
 from .services.languages import AUTO, language_choices
 
 
-class TranslateForm(forms.Form):
-    text = forms.CharField(
-        max_length=MAX_CHARS,
-        strip=True,  # remove leading/trailing spaces
-        widget=forms.Textarea(attrs={
-            "id": "source-text",
-            "class": "form-control translate-box",
-            "placeholder": "Type or paste text here…",
-            "maxlength": MAX_CHARS,
-            "rows": 8,  # same height as the output box
-        }),
-        error_messages={
-            "required": "Please enter some text to translate.",
-            "max_length": f"Text is too long. The limit is {MAX_CHARS} characters.",
-        },
-    )
+class LanguagePairForm(forms.Form):
+    """Base form with the From/To dropdowns, shared by the text form and the file form."""
+
     source_lang = forms.ChoiceField(widget=forms.Select(attrs={"id": "source-lang", "class": "form-select"}))
     target_lang = forms.ChoiceField(widget=forms.Select(attrs={"id": "target-lang", "class": "form-select"}))
 
@@ -44,6 +31,61 @@ class TranslateForm(forms.Form):
                 "The source and target languages are the same. Choose a different target language."
             )
         return cleaned
+
+
+class TranslateForm(LanguagePairForm):
+    text = forms.CharField(
+        max_length=MAX_CHARS,
+        strip=True,  # remove leading/trailing spaces
+        widget=forms.Textarea(attrs={
+            "id": "source-text",
+            "class": "form-control translate-box",
+            "placeholder": "Type or paste text here…",
+            "maxlength": MAX_CHARS,
+            "rows": 8,  # same height as the output box
+        }),
+        error_messages={
+            "required": "Please enter some text to translate.",
+            "max_length": f"Text is too long. The limit is {MAX_CHARS} characters.",
+        },
+    )
+
+    field_order = ["source_lang", "target_lang", "text"]
+
+
+MAX_UPLOAD_BYTES = 200 * 1024  # 200 KB is plenty for 20,000 characters
+
+
+class FileTranslateForm(LanguagePairForm):
+    """Upload a .txt file (US-10). clean_file() returns the decoded TEXT, not the file object."""
+
+    file = forms.FileField(
+        label="Text file (.txt)",
+        widget=forms.ClearableFileInput(attrs={"accept": ".txt,text/plain", "class": "form-control"}),
+        error_messages={"required": "Please choose a .txt file."},
+    )
+
+    def clean_file(self):
+        upload = self.cleaned_data["file"]
+        if not upload.name.lower().endswith(".txt"):
+            raise forms.ValidationError("Only .txt files are supported.")
+        if upload.size > MAX_UPLOAD_BYTES:
+            raise forms.ValidationError(f"The file is too big ({upload.size // 1024} KB). The limit is 200 KB.")
+        try:
+            # utf-8-sig also removes the invisible "BOM" mark that Notepad sometimes adds
+            text = upload.read().decode("utf-8-sig")
+        except UnicodeDecodeError:
+            raise forms.ValidationError(
+                "The file must be saved as UTF-8 text. In Notepad: File → Save As → Encoding: UTF-8."
+            )
+        text = text.strip()
+        if not text:
+            raise forms.ValidationError("The file is empty.")
+        if len(text) > MAX_DOCUMENT_CHARS:
+            raise forms.ValidationError(
+                f"The file has {len(text):,} characters. The limit is {MAX_DOCUMENT_CHARS:,}."
+            )
+        return text
 
 
 class HistoryFilterForm(forms.Form):

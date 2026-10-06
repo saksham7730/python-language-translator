@@ -1,0 +1,46 @@
+{% extends "translator/base.html" %}
+
+{% block title %}Translation · Language Translator{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="h4 mb-1">{{ t.source_name }} → {{ t.target_name }}</h1>
+    <p class="small text-body-secondary mb-0">
+      {{ t.created_at|date:"d M Y, H:i" }} · {{ t.get_origin_display }} · via {{ t.engine_name }}
+      · {{ t.char_count }} characters{% if t.was_auto_detected %} · source auto-detected{% endif %}
+    </p>
+  </div>
+  <a href="{% url 'translator:history' %}" class="btn btn-sm btn-outline-secondary">← Back to history</a>
+</div>
+
+<div class="row g-3">
+  <section class="col-md-6">
+    <div class="card h-100"><div class="card-body">
+      <h2 class="h6 text-body-secondary">Original</h2>
+      <div class="history-text" id="detail-source">{{ t.source_text }}</div>
+    </div></div>
+  </section>
+  <section class="col-md-6">
+    <div class="card h-100"><div class="card-body">
+      <div class="d-flex align-items-center gap-1 mb-2">
+        <h2 class="h6 text-body-secondary mb-0 me-auto">Translation</h2>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-speak="#detail-output"
+                data-lang="{{ t.target_lang }}" title="Listen" aria-label="Listen to the translation">🔊</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-copy="#detail-output"
+                title="Copy" aria-label="Copy the translation">📋</button>
+      </div>
+      <div class="history-text" id="detail-output" lang="{{ t.target_lang }}">{{ t.translated_text }}</div>
+    </div></div>
+  </section>
+</div>
+
+<div class="d-flex flex-wrap gap-2 mt-3">
+  <a href="{% url 'translator:download' t.pk %}" class="btn btn-primary">Download .txt</a>
+  {% if t.char_count <= 5000 %}
+    <a href="{% url 'translator:home' %}?text={{ t.source_text|urlencode }}&amp;from={{ t.source_lang|urlencode }}&amp;to={{ t.target_lang|urlencode }}"
+       class="btn btn-outline-secondary">Translate again</a>
+  {% endif %}
+  <a href="{% url 'translator:delete' t.pk %}" class="btn btn-outline-danger ms-auto">Delete</a>
+</div>
+{% endblock %}

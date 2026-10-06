@@ -35,12 +35,15 @@ from translator.exceptions import (
 )
 
 from . import gemini
+from .chunking import chunk_text
 from .detection import Detection, detect_language
 from .languages import AUTO, get_language_name, is_supported, mymemory_code
 
 logger = logging.getLogger(__name__)
 
-MAX_CHARS = 5000            # Google's limit per request; longer text is chunked in US-10
+MAX_CHARS = 5000            # Google's limit per request; longer text goes through translate_long_text()
+LONG_TEXT_CHUNK = 4500      # chunk size for long text (a little under Google's limit)
+MAX_DOCUMENT_CHARS = 20000  # upper limit for files: about 5 Google requests, kind to the free APIs
 MYMEMORY_MAX_CHARS = 499    # MyMemory's free API accepts fewer than 500 characters
 TIMEOUT_SECONDS = 10        # give up on an engine that hasn't answered by then
 COOLDOWN_SECONDS = 60       # after "too many requests", skip that engine for a minute
@@ -278,3 +281,61 @@ def translate_text(text, target_lang, source_lang=AUTO):
     # Every engine failed (or was skipped): report the first, most relevant problem
     logger.error("All translation engines failed (%s -> %s): %s", text_lang, target_lang, errors)
     raise errors[0] if errors else ServiceError()
+
+
+# ---------------------------------------------------------------------------
+# Long text (US-10): split into chunks with a generator and translate each one
+# ---------------------------------------------------------------------------
+
+def _translate_chunk(chunk, target_lang, source_lang):
+    """Translate one chunk. If it fails and it's too big for MyMemory, retry in MyMemory-sized pieces."""
+    try:
+        return [translate_text(chunk, target_lang, source_lang)]
+    except (RateLimitError, ServiceError):
+        if len(chunk) <= MYMEMORY_MAX_CHARS:
+            raise
+        logger.info("Retrying a %d-character chunk in smaller pieces for the backup engine", len(chunk))
+        return [translate_text(piece, target_lang, source_lang)
+                for piece in chunk_text(chunk, MYMEMORY_MAX_CHARS) if piece.strip()]
+
+
+def translate_long_text(text, target_lang, source_lang=AUTO):
+    """Translate text of any length up to MAX_DOCUMENT_CHARS, keeping its line breaks.
+
+    The language is detected once for the whole text, so every chunk is translated
+    from the same source language.
+    """
+    text = (text or "").strip()
+    if len(text) <= MAX_CHARS:
+        return translate_text(text, target_lang, source_lang)
+    if len(text) > MAX_DOCUMENT_CHARS:
+        raise TranslationError(
+            f"The text is too long ({len(text):,} characters). The limit is {MAX_DOCUMENT_CHARS:,}."
+        )
+
+    detection = None
+    if source_lang == AUTO:
+        detection = detect_language(text[:2000])  # a sample is enough and much faster
+        if detection and detection.reliable and not detection.romanized:
+            source_lang = detection.code
+
+    parts, results = [], []
+    for chunk in chunk_text(text, LONG_TEXT_CHUNK):
+        if not chunk.strip():                    # a chunk of blank lines: keep it as it is
+            parts.append(chunk)
+            continue
+        trailing = chunk[len(chunk.rstrip()):]   # keep the line break / space after the chunk
+        chunk_results = _translate_chunk(chunk, target_lang, source_lang)
+        results.extend(chunk_results)
+        parts.append(" ".join(r.translated_text for r in chunk_results) + trailing)
+
+    engines = [r.engine for r in results]
+    return TranslationResult(
+        source_text=text,
+        translated_text="".join(parts).strip(),
+        source_lang=source_lang if source_lang != AUTO else results[0].source_lang,
+        target_lang=target_lang,
+        engine=max(set(engines), key=engines.count),   # the engine that did most of the work
+        detection=detection,
+        used_fallback=any(r.used_fallback for r in results),
+    )

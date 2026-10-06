@@ -22,7 +22,7 @@ from pathlib import Path
 EXIT_OK = 0
 EXIT_ERROR = 1    # the translation (or reading the file) failed
 EXIT_USAGE = 2    # wrong arguments (argparse also uses 2)
-MAX_FILE_CHARS = 5000
+MAX_FILE_CHARS = 20000   # same limit as the website's file upload
 
 
 def setup_django():
@@ -118,11 +118,11 @@ def translate_once(text, source, target, args):
     """Translate one piece of text, print it, optionally save it. Returns an exit code."""
     from translator.exceptions import TranslationError
     from translator.models import Translation
-    from translator.services.engine import translate_text
+    from translator.services.engine import translate_long_text
     from translator.services.languages import get_language_name
 
     try:
-        result = translate_text(text, target, source)
+        result = translate_long_text(text, target, source)   # long text is chunked automatically
     except TranslationError as exc:
         info(f"Error: {exc}")
         return EXIT_ERROR
