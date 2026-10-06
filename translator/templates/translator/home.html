@@ -56,7 +56,11 @@
             <div id="detected-lang" class="small mt-1">
               {% if result.detection.reliable %}
                 <span class="badge text-bg-info">Detected: {{ result.detection.name }}</span>
-                <span class="text-body-secondary">({{ result.detection.percent }}% confident)</span>
+                {% if result.detection.romanized %}
+                  <span class="text-body-secondary">(recognised common Hindi words)</span>
+                {% else %}
+                  <span class="text-body-secondary">({{ result.detection.percent }}% confident)</span>
+                {% endif %}
               {% else %}
                 <span class="text-body-secondary">
                   The text is too short to detect reliably, so the translator picked the language automatically.
@@ -75,7 +79,7 @@
             </div>
             {% if result.used_fallback %}
               <div id="fallback-note" class="small text-warning-emphasis mt-1">
-                Google was unavailable, so the backup engine was used.
+                The main engine was unavailable, so the backup engine was used.
               </div>
             {% endif %}
           {% endif %}
