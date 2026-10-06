@@ -72,7 +72,7 @@ class DetectionViewTests(EngineMocksMixin, TestCase):
     url = reverse("translator:home")
 
     def post(self, text, source="auto"):
-        return self.client.post(self.url, {"text": text, "source_lang": source, "target_lang": "hi"})
+        return self.client.post(self.url, {"text": text, "source_lang": source, "target_lang": "hi"}, follow=True)
 
     def test_shows_detected_language(self):
         response = self.post("Bonjour, comment allez-vous aujourd'hui ?")

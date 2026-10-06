@@ -96,6 +96,6 @@ class HinglishViewTests(EngineMocksMixin, TestCase):
     def test_page_shows_roman_script_hindi(self):
         self.google.return_value.translate.return_value = "What is happening?"
         response = self.client.post(reverse("translator:home"),
-                                    {"text": "ye kya horha hai?", "source_lang": "auto", "target_lang": "en"})
+                                    {"text": "ye kya horha hai?", "source_lang": "auto", "target_lang": "en"}, follow=True)
         self.assertContains(response, "Detected: Hindi (Roman script)")
         self.assertContains(response, "What is happening?")

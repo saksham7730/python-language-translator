@@ -83,7 +83,7 @@ class TranslateViewTests(EngineMocksMixin, TestCase):
         self.assertContains(response, '<option value="auto" selected>Auto-detect</option>', html=True)
 
     def test_post_shows_translation_and_keeps_input(self):
-        response = self.client.post(self.url, {"text": "Hello", "source_lang": "auto", "target_lang": "hi"})
+        response = self.client.post(self.url, {"text": "Hello", "source_lang": "auto", "target_lang": "hi"}, follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "नमस्ते")
         self.assertContains(response, "Translated to Hindi")
