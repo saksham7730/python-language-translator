@@ -34,6 +34,7 @@ from translator.exceptions import (
     UnsupportedLanguageError,
 )
 
+from . import gemini
 from .detection import Detection, detect_language
 from .languages import AUTO, get_language_name, is_supported, mymemory_code
 
@@ -44,13 +45,13 @@ MYMEMORY_MAX_CHARS = 499    # MyMemory's free API accepts fewer than 500 charact
 TIMEOUT_SECONDS = 10        # give up on an engine that hasn't answered by then
 COOLDOWN_SECONDS = 60       # after "too many requests", skip that engine for a minute
 
-ENGINE_NAMES = {"google": "Google", "mymemory": "MyMemory"}
+ENGINE_NAMES = {"google": "Google", "gemini": "Gemini", "mymemory": "MyMemory"}
 
 
 def primary_engine():
     """Which engine to try first, from the PRIMARY_ENGINE setting in .env (default: google).
 
-    Useful while Google is blocking your network: set PRIMARY_ENGINE=mymemory to skip it.
+    Useful while Google is blocking your network: set PRIMARY_ENGINE=gemini (or mymemory).
     Read on every call (not once at import) so a changed .env applies after a restart
     and tests can change it.
     """
@@ -96,6 +97,26 @@ def _mymemory(text, source, target):
     if translated and translated.upper().startswith(("INVALID", "PLEASE SELECT")):
         raise ServiceError()
     return translated
+
+
+def _gemini(text, source, target):
+    """Returns a GeminiReply (translation + detected language), not just a string."""
+    return gemini.translate(text, source, target)
+
+
+def _detection_from_engine(reply):
+    """Turn the language Gemini reports into a Detection (more accurate than langdetect)."""
+    if not reply.detected_code:
+        return None
+    name = get_language_name(reply.detected_code)
+    return Detection(
+        code=reply.detected_code,
+        name=f"{name} (Roman script)" if reply.romanized else name,
+        confidence=1.0,
+        reliable=True,
+        romanized=reply.romanized,
+        detector="Gemini",
+    )
 
 
 def _mymemory_can_handle(text, source, target):
@@ -205,6 +226,7 @@ def translate_text(text, target_lang, source_lang=AUTO):
     # (name, function, source language to use)
     engines = [
         ("google", _google, google_source),
+        ("gemini", _gemini, google_source),      # Gemini can detect languages itself too
         ("mymemory", _mymemory, backup_source),
     ]
     # PRIMARY_ENGINE=mymemory puts MyMemory first (sort by "is it NOT the primary": False < True)
@@ -218,6 +240,8 @@ def translate_text(text, target_lang, source_lang=AUTO):
             continue
         if name == "mymemory" and (not _mymemory_can_handle(text, source, target_lang) or source == target_lang):
             continue
+        if name == "gemini" and not gemini.is_configured():
+            continue   # no GEMINI_API_KEY in .env: skip it quietly
 
         try:
             translated = _run_with_timeout(engine, text, source, target_lang)
@@ -230,6 +254,14 @@ def translate_text(text, target_lang, source_lang=AUTO):
                 _start_cooldown(name)
             errors.append(error)
             continue
+
+        if isinstance(translated, gemini.GeminiReply):
+            reply = translated
+            translated = reply.translation
+            if source_lang == AUTO:                     # trust Gemini's detection over langdetect
+                detection = _detection_from_engine(reply) or detection
+                if detection and detection.reliable:
+                    text_lang = detection.code
 
         if errors:
             logger.info("Translated with backup engine %s after: %s", name, errors)

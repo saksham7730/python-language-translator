@@ -28,6 +28,7 @@ class Detection:
     confidence: float  # 0.0 - 1.0
     reliable: bool     # True -> safe to use as the source language
     romanized: bool = False  # True for Hindi typed in English letters ("Hinglish")
+    detector: str = "langdetect"  # who detected it: "langdetect", "rules" or a translation engine
 
     @property
     def percent(self):
@@ -79,7 +80,7 @@ def detect_romanized_hindi(text):
     share = len(hits) / len(words)
     if len(set(hits)) >= MIN_HINGLISH_WORDS and share >= MIN_HINGLISH_SHARE:
         return Detection(code="hi", name="Hindi (Roman script)", confidence=share,
-                         reliable=True, romanized=True)
+                         reliable=True, romanized=True, detector="rules")
     return None
 
 

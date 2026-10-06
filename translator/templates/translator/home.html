@@ -56,7 +56,9 @@
             <div id="detected-lang" class="small mt-1">
               {% if result.detection.reliable %}
                 <span class="badge text-bg-info">Detected: {{ result.detection.name }}</span>
-                {% if result.detection.romanized %}
+                {% if result.detection.detector == "Gemini" %}
+                  <span class="text-body-secondary">(detected by Gemini)</span>
+                {% elif result.detection.romanized %}
                   <span class="text-body-secondary">(recognised common Hindi words)</span>
                 {% else %}
                   <span class="text-body-secondary">({{ result.detection.percent }}% confident)</span>
