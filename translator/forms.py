@@ -1,5 +1,6 @@
 """Forms: validate what the user submitted before we use it."""
 from django import forms
+from django.db.models import Q
 
 from .services.engine import MAX_CHARS
 from .services.languages import AUTO, language_choices
@@ -43,3 +44,54 @@ class TranslateForm(forms.Form):
                 "The source and target languages are the same. Choose a different target language."
             )
         return cleaned
+
+
+class HistoryFilterForm(forms.Form):
+    """Search and filter box on the history page (US-05). Submitted with GET so the
+    filters stay in the URL: they can be bookmarked and survive changing pages."""
+
+    q = forms.CharField(
+        required=False, label="Search",
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Search text…", "type": "search"}),
+    )
+    source_lang = forms.ChoiceField(required=False, label="From", widget=forms.Select(attrs={"class": "form-select"}))
+    target_lang = forms.ChoiceField(required=False, label="To", widget=forms.Select(attrs={"class": "form-select"}))
+    date_from = forms.DateField(required=False, label="From date",
+                                widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}))
+    date_to = forms.DateField(required=False, label="To date",
+                              widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        choices = language_choices()
+        self.fields["source_lang"].choices = [("", "Any language"), (AUTO, "Unknown (auto)"), *choices]
+        self.fields["target_lang"].choices = [("", "Any language"), *choices]
+
+    def clean(self):
+        cleaned = super().clean()
+        start, end = cleaned.get("date_from"), cleaned.get("date_to")
+        if start and end and start > end:
+            raise forms.ValidationError("The 'from' date must be on or before the 'to' date.")
+        return cleaned
+
+    def has_filters(self):
+        """True if the user filled in at least one filter."""
+        return self.is_valid() and any(self.cleaned_data.values())
+
+    def apply(self, queryset):
+        """Return the queryset narrowed down by whichever filters were filled in."""
+        if not self.is_valid():
+            return queryset
+        data = self.cleaned_data
+        if data["q"]:
+            # Q objects combine conditions with OR (|); icontains = case-insensitive "contains"
+            queryset = queryset.filter(Q(source_text__icontains=data["q"]) | Q(translated_text__icontains=data["q"]))
+        if data["source_lang"]:
+            queryset = queryset.filter(source_lang=data["source_lang"])
+        if data["target_lang"]:
+            queryset = queryset.filter(target_lang=data["target_lang"])
+        if data["date_from"]:
+            queryset = queryset.filter(created_at__date__gte=data["date_from"])
+        if data["date_to"]:
+            queryset = queryset.filter(created_at__date__lte=data["date_to"])
+        return queryset

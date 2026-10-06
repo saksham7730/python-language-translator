@@ -1,0 +1,28 @@
+{% extends "translator/base.html" %}
+
+{% block title %}Confirm delete · Language Translator{% endblock %}
+
+{% block content %}
+<div class="card mx-auto" style="max-width: 560px;">
+  <div class="card-body p-4">
+    {% if translation %}
+      <h1 class="h4">Delete this translation?</h1>
+      <p class="text-body-secondary small mb-2">{{ translation.source_name }} → {{ translation.target_name }} · {{ translation.created_at|date:"d M Y, H:i" }}</p>
+      <blockquote class="border-start ps-3 mb-4">{{ translation.source_text|truncatechars:150 }}</blockquote>
+      {% url 'translator:delete' translation.pk as action %}
+    {% else %}
+      <h1 class="h4">Clear all history?</h1>
+      <p class="mb-4">This permanently deletes <strong>{{ count }}</strong> translation{{ count|pluralize }}. It can't be undone.</p>
+      {% url 'translator:clear' as action %}
+    {% endif %}
+
+    {# Deleting only happens on POST; the CSRF token proves the request came from our own page #}
+    <form method="post" action="{{ action }}" class="d-flex gap-2">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="btn btn-danger">Yes, delete</button>
+      <a href="{{ next }}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

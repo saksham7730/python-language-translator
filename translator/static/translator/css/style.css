@@ -27,3 +27,9 @@ textarea.translate-box {
 .card-text {
   overflow-wrap: anywhere;
 }
+
+/* History cards: keep line breaks from the original text, wrap long words */
+.history-text {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}

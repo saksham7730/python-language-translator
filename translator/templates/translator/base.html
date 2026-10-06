@@ -40,7 +40,10 @@
             <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}"
                href="{% url 'translator:home' %}">Translate</a>
           </li>
-          <li class="nav-item"><span class="nav-link disabled" title="Coming in Sprint 2">History</span></li>
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name in 'history delete clear' %}active{% endif %}"
+               href="{% url 'translator:history' %}">History</a>
+          </li>
           <li class="nav-item"><span class="nav-link disabled" title="Coming in Sprint 3">Statistics</span></li>
           <li class="nav-item ms-md-2">
             <button id="theme-toggle" class="btn btn-sm btn-outline-light" type="button"
