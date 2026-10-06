@@ -14,7 +14,7 @@ class EngineMocksMixin:
         super().setUp()
         engine.reset_cooldowns()
         # Tests must not depend on the developer's .env (e.g. PRIMARY_ENGINE=mymemory)
-        env_patch = patch.dict(os.environ, {"PRIMARY_ENGINE": "google"})
+        env_patch = patch.dict(os.environ, {"PRIMARY_ENGINE": "google", "GEMINI_API_KEY": ""})
         env_patch.start()
         self.addCleanup(env_patch.stop)
         google_patch = patch("translator.services.engine.GoogleTranslator")
