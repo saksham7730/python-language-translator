@@ -1,0 +1,86 @@
+{% extends "translator/base.html" %}
+
+{% block title %}Statistics · Language Translator{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-3">Usage statistics</h1>
+
+{% if not report.enough_data %}
+  <div class="text-center text-body-secondary py-5" id="not-enough-data">
+    <p class="fs-5 mb-2">Not enough data yet.</p>
+    <p>Statistics appear after at least 2 translations{% if report.total %} (you have {{ report.total }}){% endif %}.</p>
+    <a href="{% url 'translator:home' %}" class="btn btn-primary">Translate something</a>
+  </div>
+{% else %}
+  {% with h=report.headline l=report.lengths %}
+  {# ---------- Stat tiles ---------- #}
+  <section class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><div class="card stat-tile h-100"><div class="card-body text-center">
+      <div class="stat-value">{{ h.total }}</div><div class="small text-body-secondary">Translations</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat-tile h-100"><div class="card-body text-center">
+      <div class="stat-value">{{ h.pairs }}</div><div class="small text-body-secondary">Language pairs</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat-tile h-100"><div class="card-body text-center">
+      <div class="stat-value">{{ h.auto_pct|floatformat:0 }}%</div><div class="small text-body-secondary">Auto-detected</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat-tile h-100"><div class="card-body text-center">
+      <div class="stat-value fs-4">{{ h.top_target }}</div><div class="small text-body-secondary">Most used target</div></div></div></div>
+  </section>
+
+  <div class="row g-4">
+    {# ---------- Chart 1: top language pairs ---------- #}
+    <section class="col-lg-6">
+      <div class="card h-100"><div class="card-body">
+        <h2 class="h6">Top language pairs</h2>
+        {% include "translator/_chart.html" with chart=report.charts.pairs alt="Bar chart of the most used language pairs" %}
+        <details class="small mt-2"><summary>Show data</summary>
+          <table class="table table-sm mt-2 mb-0"><thead><tr><th>Pair</th><th class="text-end">Translations</th></tr></thead>
+            <tbody>{% for pair, count in report.pairs_table %}<tr><td>{{ pair }}</td><td class="text-end">{{ count }}</td></tr>{% endfor %}</tbody>
+          </table>
+        </details>
+      </div></div>
+    </section>
+
+    {# ---------- Chart 2: target language share ---------- #}
+    <section class="col-lg-6">
+      <div class="card h-100"><div class="card-body">
+        <h2 class="h6">Target languages (% of translations)</h2>
+        {% include "translator/_chart.html" with chart=report.charts.share alt="Bar chart of the share of each target language" %}
+        <details class="small mt-2"><summary>Show data</summary>
+          <table class="table table-sm mt-2 mb-0"><thead><tr><th>Language</th><th class="text-end">Share</th></tr></thead>
+            <tbody>{% for lang, pct in report.share_table %}<tr><td>{{ lang }}</td><td class="text-end">{{ pct }}%</td></tr>{% endfor %}</tbody>
+          </table>
+        </details>
+      </div></div>
+    </section>
+
+    {# ---------- Chart 3: translations per day ---------- #}
+    <section class="col-lg-8">
+      <div class="card h-100"><div class="card-body">
+        <h2 class="h6">Translations per day (last 14 days)</h2>
+        {% include "translator/_chart.html" with chart=report.charts.daily alt="Line chart of translations per day over the last 14 days" %}
+        <details class="small mt-2"><summary>Show data</summary>
+          <table class="table table-sm mt-2 mb-0"><thead><tr><th>Day</th><th class="text-end">Translations</th></tr></thead>
+            <tbody>{% for day, count in report.daily_table %}<tr><td>{{ day|date:"D d M" }}</td><td class="text-end">{{ count }}</td></tr>{% endfor %}</tbody>
+          </table>
+        </details>
+      </div></div>
+    </section>
+
+    {# ---------- NumPy text-length statistics ---------- #}
+    <section class="col-lg-4">
+      <div class="card h-100"><div class="card-body">
+        <h2 class="h6">Text length (characters)</h2>
+        <dl class="row mb-0 small" id="length-stats">
+          <dt class="col-7 fw-normal text-body-secondary">Average (mean)</dt><dd class="col-5 text-end">{{ l.mean }}</dd>
+          <dt class="col-7 fw-normal text-body-secondary">Median</dt><dd class="col-5 text-end">{{ l.median|floatformat:"-1" }}</dd>
+          <dt class="col-7 fw-normal text-body-secondary">90th percentile</dt><dd class="col-5 text-end">{{ l.p90 }}</dd>
+          <dt class="col-7 fw-normal text-body-secondary">Longest</dt><dd class="col-5 text-end">{{ l.max }}</dd>
+          <dt class="col-7 fw-normal text-body-secondary">Total translated</dt><dd class="col-5 text-end">{{ l.total_chars }}</dd>
+          <dt class="col-7 fw-normal text-body-secondary">Busiest day</dt><dd class="col-5 text-end">{{ h.busiest_day|date:"d M" }}</dd>
+        </dl>
+        <p class="small text-body-secondary mt-3 mb-0">Calculated with NumPy (mean, median, percentile).</p>
+      </div></div>
+    </section>
+  </div>
+  {% endwith %}
+{% endif %}
+{% endblock %}
