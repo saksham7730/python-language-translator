@@ -9,6 +9,7 @@ Flow of translate_text():
 Nothing in this file imports Django, so the CLI (US-09) can reuse it.
 """
 import logging
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
@@ -46,6 +47,17 @@ COOLDOWN_SECONDS = 60       # after "too many requests", skip that engine for a 
 ENGINE_NAMES = {"google": "Google", "mymemory": "MyMemory"}
 
 
+def primary_engine():
+    """Which engine to try first, from the PRIMARY_ENGINE setting in .env (default: google).
+
+    Useful while Google is blocking your network: set PRIMARY_ENGINE=mymemory to skip it.
+    Read on every call (not once at import) so a changed .env applies after a restart
+    and tests can change it.
+    """
+    value = os.getenv("PRIMARY_ENGINE", "google").strip().lower()
+    return value if value in ENGINE_NAMES else "google"
+
+
 @dataclass(frozen=True)
 class TranslationResult:
     """Everything the caller needs to know about one translation (immutable record)."""
@@ -55,15 +67,12 @@ class TranslationResult:
     target_lang: str
     engine: str = "google"
     detection: Detection | None = None   # set when the user chose Auto-detect
+    used_fallback: bool = False          # True if the first engine failed and a backup was used
 
     @property
     def was_auto_detected(self):
         """True if the user picked Auto-detect (stored in the history in US-03)."""
         return self.detection is not None or self.source_lang == AUTO
-
-    @property
-    def used_fallback(self):
-        return self.engine != "google"
 
     @property
     def engine_name(self):
@@ -172,26 +181,34 @@ def translate_text(text, target_lang, source_lang=AUTO):
     text = (text or "").strip()
     _validate(text, source_lang, target_lang)
 
-    # Auto-detect (US-02): use the detected language if we're confident about it
+    # Auto-detect (US-02): use the detected language if we're confident about it.
+    # text_lang = the language the text is written in, as far as we know ("auto" = unknown)
     detection = None
+    text_lang = source_lang
     if source_lang == AUTO:
         detection = detect_language(text)
         if detection and detection.reliable:
-            source_lang = detection.code
+            text_lang = detection.code
 
-    if source_lang == target_lang:
+    romanized = bool(detection and detection.romanized)
+    # Hinglish -> Hindi is a real request (convert to Devanagari script), so it's not "the same language"
+    if text_lang == target_lang and not romanized:
         raise SameLanguageError(
             f"The text is already in {get_language_name(target_lang)}. Choose a different target language."
         )
 
-    # The backup engine can't auto-detect, so give it langdetect's best guess
-    backup_source = source_lang if source_lang != AUTO else (detection.code if detection else AUTO)
+    # Google understands romanized Hindi best when it detects it itself, so give it "auto".
+    google_source = AUTO if romanized else text_lang
+    # The backup engine can't auto-detect, so give it our best guess
+    backup_source = text_lang if text_lang != AUTO else (detection.code if detection else AUTO)
 
-    # (name, function, source language to use) - tried in this order
+    # (name, function, source language to use)
     engines = [
-        ("google", _google, source_lang),
+        ("google", _google, google_source),
         ("mymemory", _mymemory, backup_source),
     ]
+    # PRIMARY_ENGINE=mymemory puts MyMemory first (sort by "is it NOT the primary": False < True)
+    engines.sort(key=lambda engine: engine[0] != primary_engine())
 
     errors = []
     for name, engine, source in engines:
@@ -219,12 +236,13 @@ def translate_text(text, target_lang, source_lang=AUTO):
         return TranslationResult(
             source_text=text,
             translated_text=translated,
-            source_lang=source,
+            source_lang=text_lang if text_lang != AUTO else source,
             target_lang=target_lang,
             engine=name,
             detection=detection,
+            used_fallback=bool(errors),
         )
 
     # Every engine failed (or was skipped): report the first, most relevant problem
-    logger.error("All translation engines failed (%s -> %s): %s", source_lang, target_lang, errors)
+    logger.error("All translation engines failed (%s -> %s): %s", text_lang, target_lang, errors)
     raise errors[0] if errors else ServiceError()
