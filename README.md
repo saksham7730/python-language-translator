@@ -38,7 +38,7 @@ A Django web app (with a companion command-line tool) that translates text betwe
 | 🔎 | Search and filter history by text, languages and date range | US-05 |
 | 🗑️ | Delete one translation or clear all, with confirmation | US-06 |
 | 🛡️ | Friendly errors (no internet, rate limit, timeout, same language…) and automatic backup engines | US-07 |
-| 🤖 | Optional Google Gemini engine (free API key) for high-quality translation and language detection | #19 |
+| 🤖 | Optional Google Gemini engine (free API key) for high-quality translation and language detection | #20 |
 | 📊 | Statistics page: top language pairs, daily usage, target-language share, text-length stats | US-08 |
 | 💻 | Command-line translator sharing the same history (`cli.py`) | US-09 |
 | 📄 | Upload a `.txt` file (up to 20,000 characters), translated in chunks, download the result | US-10 |
