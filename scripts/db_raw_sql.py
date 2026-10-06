@@ -1,4 +1,4 @@
-"""Raw SQL with Python's DB-API (ITL-V Unit 3: databases with Python).
+"""Raw SQL with Python's DB-API: DDL and DML on the translator database.
 
 The website uses Django's ORM. This script talks to the SAME database directly
 with SQL, using sqlite3 (built into Python) or PyMySQL, to show DDL and DML:

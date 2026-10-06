@@ -170,7 +170,7 @@ STORIES = [
         "story": "As an evaluator, I want a clear README, so that I can set up and assess the project quickly.",
         "criteria": [
             "README covers overview, features, tech stack, setup (SQLite and MySQL), usage, screenshots and author",
-            "README includes the final ITL-V syllabus mapping table",
+            "README lists which Python concepts and libraries each part uses",
         ],
         "notes": "Screenshots go in docs/screenshots/",
     },

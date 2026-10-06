@@ -2,14 +2,12 @@
 
 A Django web app (with a companion command-line tool) that translates text between 100+ languages, **auto-detects the source language** (including Hindi typed in English letters), keeps a searchable **translation history** in a database, and shows **usage analytics** built with Pandas, NumPy and Matplotlib.
 
-> **Course:** Information Technology Laboratory-V (ITL-V), B.Tech IT, Semester V
 > **Institute:** Bharati Vidyapeeth College of Engineering, Pune
-> **Type:** Project Based Learning (PBL), individual project
 > **Faculty guide:** Prof. Sonali D Mali
 
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Django](https://img.shields.io/badge/django-5.2%20LTS-green)
-![Tests](https://img.shields.io/badge/tests-148%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-150%20passing-brightgreen)
 
 ---
 
@@ -24,7 +22,7 @@ A Django web app (with a companion command-line tool) that translates text betwe
 - [Screenshots](#screenshots)
 - [Known limitations](#known-limitations)
 - [Project management](#project-management)
-- [ITL-V syllabus mapping](#itl-v-syllabus-mapping)
+- [Python concepts used](#python-concepts-used)
 - [Author](#author)
 
 ## Features
@@ -53,7 +51,7 @@ A Django web app (with a companion command-line tool) that translates text betwe
 | Web framework | Django 5.2 LTS | MVT architecture, ORM, admin, forms, CSRF protection |
 | Translation | [deep-translator](https://pypi.org/project/deep-translator/): Google and MyMemory; Google Gemini API via `requests` | Google/MyMemory need no key; Gemini needs a free key and gives the best quality |
 | Language detection | [langdetect](https://pypi.org/project/langdetect/) + a rule-based Hinglish check | Offline; tells us *which* language was detected |
-| Database | SQLite (default) or MySQL via PyMySQL | MySQL for the syllabus; SQLite for zero-setup development |
+| Database | SQLite (default) or MySQL via PyMySQL | MySQL for a production-style setup; SQLite for zero-setup development |
 | Analysis | NumPy, Pandas | Statistics and grouping on the translation history |
 | Charts | Matplotlib (Agg backend, PNG in memory) | Server-side charts in light and dark versions |
 | UI | Django templates + Bootstrap 5.3 | Responsive, built-in dark mode, no JS framework |
@@ -94,7 +92,7 @@ python-language-translator/
 │   ├── templates/translator/      # base, home, file, history, detail, stats, confirm_delete
 │   ├── static/translator/         # style.css, theme.js, home.js, speech.js
 │   ├── migrations/                # database schema history
-│   ├── tests/                     # 148 tests
+│   ├── tests/                     # 150 tests
 │   ├── models.py  forms.py  views.py  urls.py  admin.py  exceptions.py
 ├── scripts/
 │   ├── github_setup.py            # creates labels, milestones, issues, board fields (gh CLI)
@@ -184,7 +182,7 @@ python cli.py --help
 ```
 The translation is printed to **stdout** and messages to **stderr**, so `python cli.py "Hi" -t hi > out.txt` saves only the translation.
 
-### Raw SQL demo (ITL-V Unit 3)
+### Raw SQL demo (DDL and DML with Python's DB-API)
 ```powershell
 python scripts/db_raw_sql.py seed --count 30   # INSERT sample rows with executemany()
 python scripts/db_raw_sql.py summary           # CREATE TABLE + INSERT ... SELECT ... GROUP BY + SELECT
@@ -197,7 +195,7 @@ python scripts/db_raw_sql.py drop              # DROP TABLE
 ```powershell
 python manage.py test
 ```
-148 tests cover the language service, detection (including Hinglish), the engine fallback, the Gemini client, timeouts and cool-down, forms, every page, the CLI, chunking, analytics and the raw SQL script. All translation engines are **mocked** in tests, so they run offline in a couple of seconds, need no API key and never use up the free APIs.
+150 tests cover the language service, detection (including Hinglish), the engine fallback, the Gemini client, timeouts and cool-down, forms, every page, the CLI, chunking, analytics and the raw SQL script. All translation engines are **mocked** in tests, so they run offline in a couple of seconds, need no API key and never use up the free APIs.
 
 ## Screenshots
 
@@ -232,16 +230,16 @@ python manage.py test
 
 - **Branching:** work happens on `feature/…` and `fix/…` branches and is merged through pull requests that say `Closes #N`, which closes the issue and moves its card to **Done**.
 
-## ITL-V syllabus mapping
+## Python concepts used
 
-| Unit | Topic | Where it is used |
-|---|---|---|
-| 1 | Core Python: variables, functions, user input, command-line arguments | `cli.py`: `argparse` options and sub-commands, `input()` interactive mode, `sys.exit` codes, stdout vs stderr |
-| 2 | Data types, iterators, generators, comprehensions, lambdas, exceptions | **JSON / dicts:** Gemini structured output parsed with `json.loads` · **Generator:** `services/chunking.py` (`yield`), `_letters()` generator expression · **Comprehensions:** dict comprehensions in `languages.py`, list comprehensions in `detection.py` and `cli.py` · **Sets:** `HINGLISH_WORDS`, `supported_codes()`, set union in `models.py` · **Tuples:** language choices, `(name, function, source)` engine list · **Lambdas:** `sort(key=lambda …)` in `engine.py` and `languages.py` · **Exceptions:** custom hierarchy in `exceptions.py`, `try/except/else/finally` throughout · **Dataclasses:** `TranslationResult`, `Detection` |
-| 3 | Databases with Python: create, insert, read, DDL/DML | `models.py` + migrations (ORM), `scripts/db_raw_sql.py` (raw `CREATE TABLE`, `INSERT … SELECT`, `executemany`, parameterised `SELECT`, `DELETE`, `DROP` with sqlite3 / PyMySQL), MySQL support via `.env` |
-| 4 | NumPy | `services/analytics.py`: `np.mean`, `np.median`, `np.percentile`, `np.max`, `np.sum` on text lengths |
-| 5 | Pandas + Matplotlib | `services/analytics.py`: DataFrame, `value_counts`, `groupby`, `date_range` + `reindex`, `mode`; Matplotlib bar and line charts rendered to PNG in memory |
-| 6 | Django (MVT) | Models (`Translation`), Views (`views.py`), Templates (`templates/translator/`), forms, URL routing, admin, messages, sessions, file uploads, pagination |
+| Area | Where it is used |
+|---|---|
+| Core Python: functions, user input, command-line arguments | `cli.py`: `argparse` options and sub-commands, `input()` interactive mode, `sys.exit` codes, stdout vs stderr |
+| Data types, generators, comprehensions, lambdas, exceptions | **JSON / dicts:** Gemini structured output parsed with `json.loads` · **Generator:** `services/chunking.py` (`yield`), `_letters()` generator expression · **Comprehensions:** dict comprehensions in `languages.py`, list comprehensions in `detection.py` and `cli.py` · **Sets:** `HINGLISH_WORDS`, `supported_codes()`, set union in `models.py` · **Tuples:** language choices, `(name, function, source)` engine list · **Lambdas:** `sort(key=lambda …)` in `engine.py` and `languages.py` · **Exceptions:** custom hierarchy in `exceptions.py`, `try/except/else/finally` throughout · **Dataclasses:** `TranslationResult`, `Detection` |
+| Databases with Python: DDL and DML | `models.py` + migrations (ORM), `scripts/db_raw_sql.py` (raw `CREATE TABLE`, `INSERT … SELECT`, `executemany`, parameterised `SELECT`, `DELETE`, `DROP` with sqlite3 / PyMySQL), MySQL support via `.env` |
+| NumPy | `services/analytics.py`: `np.mean`, `np.median`, `np.percentile`, `np.max`, `np.sum` on text lengths |
+| Pandas + Matplotlib | `services/analytics.py`: DataFrame, `value_counts`, `groupby`, `date_range` + `reindex`, `mode`; Matplotlib bar and line charts rendered to PNG in memory |
+| Django (MVT) | Models (`Translation`), Views (`views.py`), Templates (`templates/translator/`), forms, URL routing, admin, messages, sessions, file uploads, pagination |
 
 ## Author
 
