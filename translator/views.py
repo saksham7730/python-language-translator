@@ -38,6 +38,7 @@ def _result_to_dict(result, chosen_source):
             "percent": detection.percent,
             "reliable": detection.reliable,
             "romanized": detection.romanized,
+            "detector": detection.detector,
         } if detection else None,
     }
 
