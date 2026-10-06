@@ -89,3 +89,13 @@ class CliTests(EngineMocksMixin, TestCase):
         self.assertEqual(code, cli.EXIT_OK)
         self.assertIn("नमस्ते", out)
         self.assertEqual(Translation.objects.count(), 1)
+
+    def test_history_shows_multiline_text_on_one_line(self):
+        Translation.objects.create(source_text="Line one\nLine two", translated_text="पहली\nदूसरी",
+                                   source_lang="en", target_lang="hi")
+        _, out, _ = self.run_cli("--history")
+        self.assertIn("Line one Line two", out)
+        self.assertIn("पहली दूसरी", out)
+
+    def test_one_line_truncates_long_text(self):
+        self.assertEqual(cli.one_line("a " * 100, width=10), "a a a a a…")
