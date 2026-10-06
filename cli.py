@@ -83,9 +83,15 @@ def show_history(limit):
     for t in rows:
         when = t.created_at.astimezone().strftime("%d %b %H:%M")
         print(f"[{when}] {t.source_lang} -> {t.target_lang} ({t.get_origin_display()})")
-        print(f"   {t.source_text[:70]}")
-        print(f"   {t.translated_text[:70]}")
+        print(f"   {one_line(t.source_text)}")
+        print(f"   {one_line(t.translated_text)}")
     return EXIT_OK
+
+
+def one_line(text, width=70):
+    """Squash line breaks and extra spaces, and cut long text with an ellipsis."""
+    flat = " ".join(text.split())
+    return flat if len(flat) <= width else flat[:width - 1] + "…"
 
 
 def resolve_languages(parser, args):
