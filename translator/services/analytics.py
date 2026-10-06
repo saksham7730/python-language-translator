@@ -3,7 +3,7 @@
 Plain Python (no Django): the view passes in a list of dicts, one per translation,
 and gets back numbers, tables and ready-to-embed PNG charts.
 
-ITL-V units used here:
+Libraries used here:
   - NumPy: mean / median / percentile of text lengths
   - Pandas: DataFrame, groupby, value_counts, date ranges, reindex
   - Matplotlib: bar and line charts rendered to PNG in memory
