@@ -22,7 +22,6 @@ A Django web app (with a companion command-line tool) that translates text betwe
 - [Screenshots](#screenshots)
 - [Known limitations](#known-limitations)
 - [Project management](#project-management)
-- [Python concepts used](#python-concepts-used)
 - [Author](#author)
 
 ## Features
@@ -229,17 +228,6 @@ python manage.py test
 | Sprint 3: Analytics & Polish | 4 Nov – 17 Nov | Stats dashboard, file upload, text-to-speech, docs |
 
 - **Branching:** work happens on `feature/…` and `fix/…` branches and is merged through pull requests that say `Closes #N`, which closes the issue and moves its card to **Done**.
-
-## Python concepts used
-
-| Area | Where it is used |
-|---|---|
-| Core Python: functions, user input, command-line arguments | `cli.py`: `argparse` options and sub-commands, `input()` interactive mode, `sys.exit` codes, stdout vs stderr |
-| Data types, generators, comprehensions, lambdas, exceptions | **JSON / dicts:** Gemini structured output parsed with `json.loads` · **Generator:** `services/chunking.py` (`yield`), `_letters()` generator expression · **Comprehensions:** dict comprehensions in `languages.py`, list comprehensions in `detection.py` and `cli.py` · **Sets:** `HINGLISH_WORDS`, `supported_codes()`, set union in `models.py` · **Tuples:** language choices, `(name, function, source)` engine list · **Lambdas:** `sort(key=lambda …)` in `engine.py` and `languages.py` · **Exceptions:** custom hierarchy in `exceptions.py`, `try/except/else/finally` throughout · **Dataclasses:** `TranslationResult`, `Detection` |
-| Databases with Python: DDL and DML | `models.py` + migrations (ORM), `scripts/db_raw_sql.py` (raw `CREATE TABLE`, `INSERT … SELECT`, `executemany`, parameterised `SELECT`, `DELETE`, `DROP` with sqlite3 / PyMySQL), MySQL support via `.env` |
-| NumPy | `services/analytics.py`: `np.mean`, `np.median`, `np.percentile`, `np.max`, `np.sum` on text lengths |
-| Pandas + Matplotlib | `services/analytics.py`: DataFrame, `value_counts`, `groupby`, `date_range` + `reindex`, `mode`; Matplotlib bar and line charts rendered to PNG in memory |
-| Django (MVT) | Models (`Translation`), Views (`views.py`), Templates (`templates/translator/`), forms, URL routing, admin, messages, sessions, file uploads, pagination |
 
 ## Author
 
